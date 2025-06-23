@@ -1,6 +1,6 @@
-# Spotify-Visualization
+# Spotify Visualization
 
-**Spotify-Visualization** is a tool for extracting your Spotify listening data, generating personalized song recommendations, and visualizing your musical world as a network graph.
+This project was created for creating a personalized song recommendations (after finding Spotify recommendations not so tasteful). It uses listening data from Spotify API, generates personalized recommendations, and visualizes musical the data as a network graph.
 
 ## Overview
 

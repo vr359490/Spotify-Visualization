@@ -1,0 +1,140 @@
+---
+# title: "Spotify_visualization"
+output: html_document
+# date: "2024-08-05"
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+
+library(igraph)
+library(ggraph)
+library(ggplot2)
+library(ggiraph)
+library(bslib)
+library(shiny)
+
+```
+
+```{r song_rec, echo = F, include = F}
+links <- read.csv("/Users/victorruan/Desktop/Spotify_Edges.csv")
+#nodes <- read.csv("/Users/victorruan/Desktop/Spotify_nodes.csv")
+nodes <- read.csv("/Users/victorruan/Desktop/Eva song recs.csv")
+
+
+net <- graph_from_data_frame(d=links, vertices=nodes, directed=F)
+
+V(net)$size = V(net)$scale
+
+recs = ggraph(net, layout = 'kk') +
+  geom_edge_arc(strength = 0.15, width = 1, alpha = 0.1) +
+  geom_node_point(aes(size = size, color = nodes$color)) + #, color = "#1DB954") +
+  geom_node_text(aes(label = nodes$name, fontface = nodes$fontface), repel = T, size = 2.2) + #geom_node_text(aes(label = nodes$name), repel = T, size = 2) +
+  ggtitle("Eva's Song Recommendations Based on Top 10 Tracks") +
+  theme_void() +
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+
+pg <- ggplot_build(recs)
+
+#Labels should only song name (no artist name) to reduce clutter?
+# TOOLTIP should contain artist name + additional info
+
+x <- pg[[1]][[2]][3]
+y <- pg[[1]][[2]][4]
+
+recs <- recs + geom_point_interactive(aes(x = x, y = y, data_id = nodes$id, tooltip = nodes$name),alpha = 0)
+
+net1 <- girafe(ggobj = recs)
+
+
+```
+
+```{r breath, include = F, fig.align='center'}
+genres = c('pop', 'hip hop', 'electronic', 'soul', 'r&b', 'rock', 'indie', 'country', 'game', 'anime')
+
+x <- genres
+y <- genres
+data <- expand.grid(X=x, Y=y)
+
+data$Z <- c(0, 2, 4, 1, 2, 1, 6, 10, 1, 1, 2, 0, 6, 1, 0, 0, 0, 0, 0, 0, 4, 6, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 1, 0, 0, 5, 0, 0, 10, 0, 1, 0, 1, 0, 5, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+# Heatmap 
+
+# lightGreen = "#90EE90"
+
+melon <- ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile() + 
+  scale_fill_gradient(low = "#D0F0C0", high="#1DB954") +
+  # ggtitle("Multi-Genre Analysis of Top 50 Artists") + 
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5)) + 
+  guides(fill=guide_legend(title="Number of Tracks")) 
+
+
+```
+
+```{r bslibtest, echo = F}
+
+links <- read.csv("/Users/victorruan/Desktop/Spotify_Edges.csv")
+#nodes <- read.csv("/Users/victorruan/Desktop/Spotify_nodes.csv")
+nodes <- read.csv("/Users/victorruan/Desktop/Eva song recs.csv")
+
+
+net <- graph_from_data_frame(d=links, vertices=nodes, directed=F) 
+
+V(net)$size = V(net)$scale
+
+recs = ggraph(net, layout = 'kk') + 
+  geom_edge_arc(strength = 0.15, width = 1, alpha = 0.1) + 
+  geom_node_point(aes(size = size, color = nodes$color)) + #, color = "#1DB954") + 
+  geom_node_text(aes(label = nodes$name, fontface = nodes$fontface), repel = T, size = 2.5) + #geom_node_text(aes(label = nodes$name), repel = T, size = 2) +
+  #ggtitle("Eva's Song Recommendations Based on Top 10 Tracks") + 
+  theme_void() + 
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+  
+
+pg <- ggplot_build(recs)
+
+#Labels should only song name (no artist name) to reduce clutter?
+# TOOLTIP should contain artist name + additional info
+
+x <- pg[[1]][[2]][3]
+y <- pg[[1]][[2]][4]
+
+recs <- recs + geom_point_interactive(aes(x = x, y = y, data_id = nodes$id, tooltip = nodes$name),alpha = 0)
+
+net1 <- girafe(ggobj = recs)
+#net1
+
+ui <- page_fillable(
+
+  layout_columns(
+    layout_columns(
+      card(card_header("Multi-Genre Analysis of Top 50 Artists"), plotOutput("Plot1")),
+      col_widths = c(10, 10),
+
+    ),
+    card(card_header("Eva's Song Recommendations Based on Top 10 Tracks"), girafeOutput("Plot2"))
+  )
+
+)
+
+# ui <- page_fillable(girafeOutput("Plot"))
+
+
+server <- function(input, output) {
+
+  output$Plot2 <- renderGirafe({net1})
+  
+  output$Plot1 <- renderPlot({melon})
+
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
